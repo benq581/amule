@@ -38,8 +38,8 @@ done
 
 echo ""
 echo -n "Step 1: Cleaning bundles... "
-rm aMule.app/Contents/Frameworks/libwx_* aMule.app/Contents/MacOS/* 1> /dev/null 2> /dev/null
-rm aMuleGUI.app/Contents/Frameworks/libwx_* aMuleGUI.app/Contents/MacOS/* 1> /dev/null 2> /dev/null
+rm aMule.app/Contents/Frameworks/* aMule.app/Contents/MacOS/* 1> /dev/null 2> /dev/null
+rm aMuleGUI.app/Contents/Frameworks/* aMuleGUI.app/Contents/MacOS/* 1> /dev/null 2> /dev/null
 rm -r aMule.app/Contents/SharedSupport 1> /dev/null 2> /dev/null
 echo "Done"
 echo ""
@@ -66,20 +66,24 @@ popd
 echo "Done"
 echo ""
 echo "Step 4: Copying libs to Framework"
-echo "    wxWidgets..."
-# wxWidgets libs to frameworks
+echo "    /usr/local/..."
+# /usr/local/ libs to frameworks
 for i in $( otool -L	aMule.app/Contents/MacOS/amule \
 						aMule.app/Contents/MacOS/amuleweb \
 						aMule.app/Contents/MacOS/ed2k \
 						aMule.app/Contents/MacOS/amulecmd \
-			| sort -u | grep libwx_ | cut -d " " -f 1 ); do
+			| sort -u | grep /usr/local/ | cut -d " " -f 1 ); do
 	cp $i aMule.app/Contents/Frameworks;
 done
 for i in $( otool -L	aMuleGUI.app/Contents/MacOS/amulegui \
-			| sort -u | grep libwx_ | cut -d " " -f 1 ); do
+			| sort -u | grep /usr/local/ | cut -d " " -f 1 ); do
 	cp $i aMuleGUI.app/Contents/Frameworks;
 done
 echo "Libs copy done."
+echo "Fixing permissions..."
+find aMule.app/Contents/Frameworks -type f -exec chmod 755 {} \;
+find aMuleGUI.app/Contents/Frameworks -type f -exec chmod 755 {} \;
+echo "Permissions fixed"
 echo ""
 echo "Step 5: Update libs info"
 #then install_name_tool on them to fix the path on the shared lib
@@ -89,7 +93,7 @@ for i in $( ls Frameworks | grep -v CVS); do
 	#update library id
 	install_name_tool -id @executable_path/../Frameworks/$i Frameworks/$i
 	#update library links
-	for j in $( otool -L Frameworks/$i | grep libwx_ | cut -d " " -f 1 ); do
+	for j in $( otool -L Frameworks/$i | grep /usr/local/ | cut -d " " -f 1 ); do
 	        install_name_tool -change \
                 $j @executable_path/../Frameworks/`echo $j | rev | cut -d "/" -f 1 | rev` \
 		Frameworks/$i 1> /dev/null 2> /dev/null
@@ -117,7 +121,7 @@ for i in $( ls Frameworks | grep -v CVS); do
 	#update library id
 	install_name_tool -id @executable_path/../Frameworks/$i Frameworks/$i
 	#update library links
-	for j in $( otool -L Frameworks/$i | grep libwx_ | cut -d " " -f 1 ); do
+	for j in $( otool -L Frameworks/$i | grep /usr/local/ | cut -d " " -f 1 ); do
 	        install_name_tool -change \
                 $j @executable_path/../Frameworks/`echo $j | rev | cut -d "/" -f 1 | rev` \
 		Frameworks/$i 1> /dev/null 2> /dev/null
