@@ -822,17 +822,13 @@ m_WanService(NULL)
 	// Null string at first
 	std::ostringstream msg;
 
-	// Declare those here to avoid 
-	// "jump to label ‘error’ [-fpermissive] crosses initialization
-	// of ‘char* ipAddress’"
-	unsigned short port;
-	char *ipAddress;
-
 	// Start UPnP
 	int ret;
-	ret = UpnpInit2(0, udpPort);
+	char *ipAddress = NULL;
+	unsigned short port = 0;
+	ret = UpnpInit(ipAddress, udpPort);
 	if (ret != UPNP_E_SUCCESS) {
-		msg << "error(UpnpInit2): Error code ";
+		msg << "error(UpnpInit): Error code ";
 		goto error;
 	}
 	port = UpnpGetServerPort();
