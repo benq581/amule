@@ -150,7 +150,7 @@ void CSearchDlg::FixSearchTypes()
 		searchchoice->Insert(m_searchchoices[2], pos++);
 	}
 
-	searchchoice->SetSelection(0);
+	searchchoice->SetSelection(1);
 }
 
 CSearchListCtrl* CSearchDlg::GetSearchList( wxUIntPtr id )
