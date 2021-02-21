@@ -54,6 +54,15 @@ different platforms, though they may be outdated a bit... (updates are welcome).
 
 [1]: http://wiki.amule.org/wiki/Compile		"How to compile and install aMule"
 
+    brew install benq581/amule/cryptopp benq581/amule/libupnp benq581/amule/wxmac automake binutils gd gettext libiconv pkg-config readline
+    export PATH="/usr/local/opt/gettext/bin:$PATH"
+    export LDFLAGS="-L/usr/local/opt/readline/lib"
+    export CPPFLAGS="-I/usr/local/opt/readline/include"
+    ./autogen.sh
+    ./configure --disable-debug --enable-optimize --enable-amule-daemon --enable-amulecmd --enable-webserver --enable-amule-gui --enable-cas --enable-wxcas --enable-alc --enable-alcc
+    make
+    ./src/utils/scripts/MacOSX/application_packager.sh
+
 
 Setting Up
 ----------
