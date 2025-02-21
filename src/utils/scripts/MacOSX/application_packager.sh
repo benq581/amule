@@ -22,122 +22,133 @@
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-SRC_FOLDER=$1
+SRC_FOLDER="$1"
 
-
-if [ -z $SRC_FOLDER ]; then
-	SRC_FOLDER="./"
+if [ -z "$SRC_FOLDER" ]; then
+    SRC_FOLDER="./"
 fi
 
 # Ensure empty directories exist
-for pkg in aMule.app aMuleGUI.app ; do
-	for d in Frameworks MacOS SharedSupport SharedSupport/locale ; do
-		[ -d $pkg/Contents/$d ] || mkdir $pkg/Contents/$d
-	done
+for app in aMule.app aMuleGUI.app; do
+    for dir in Frameworks MacOS SharedSupport SharedSupport/locale; do
+        mkdir -p "$app/Contents/$dir"
+    done
 done
 
-echo ""
-echo -n "Step 1: Cleaning bundles... "
-rm aMule.app/Contents/Frameworks/libwx_* aMule.app/Contents/MacOS/* 1> /dev/null 2> /dev/null
-rm aMuleGUI.app/Contents/Frameworks/libwx_* aMuleGUI.app/Contents/MacOS/* 1> /dev/null 2> /dev/null
-rm -r aMule.app/Contents/SharedSupport 1> /dev/null 2> /dev/null
-echo "Done"
-echo ""
-echo -n "Step 2.1: Copying aMule to app bundle... "
-cp ${SRC_FOLDER}/src/amule aMule.app/Contents/MacOS/
-cp ${SRC_FOLDER}/src/webserver/src/amuleweb aMule.app/Contents/MacOS/
-cp ${SRC_FOLDER}/src/ed2k aMule.app/Contents/MacOS/
-cp ${SRC_FOLDER}/src/amulecmd aMule.app/Contents/MacOS/
-cp ${SRC_FOLDER}/platforms/MacOSX/aMule-Xcode/amule.icns aMule.app/Contents/Resources/
-cp -R ${SRC_FOLDER}/src/webserver aMule.app/Contents/Resources
+echo "Step 1: Cleaning bundles... "
+rm -rf aMule.app/Contents/Frameworks/*
+rm -rf aMule.app/Contents/MacOS/*
+rm -rf aMule.app/Contents/SharedSupport
+rm -rf aMuleGUI.app/Contents/Frameworks/*
+rm -rf aMuleGUI.app/Contents/MacOS/*
+echo
+
+echo "Step 2.1: Copying aMule to app bundle... "
+cp "${SRC_FOLDER}/src/amule" aMule.app/Contents/MacOS/
+cp "${SRC_FOLDER}/src/webserver/src/amuleweb" aMule.app/Contents/MacOS/
+cp "${SRC_FOLDER}/src/ed2k" aMule.app/Contents/MacOS/
+cp "${SRC_FOLDER}/src/amulecmd" aMule.app/Contents/MacOS/
+cp "${SRC_FOLDER}/platforms/MacOSX/aMule-Xcode/amule.icns" aMule.app/Contents/Resources/
+cp -R "${SRC_FOLDER}/src/webserver" aMule.app/Contents/Resources
 find aMule.app/Contents/Resources/webserver \( -name .svn -o -name "Makefile*" -o -name src \) -print0 | xargs -0 rm -rf
-echo "Done"
-echo -n "Step 2.2: Copying aMuleGUI to app bundle... "
-cp ${SRC_FOLDER}/src/amulegui aMuleGUI.app/Contents/MacOS/
-cp ${SRC_FOLDER}/platforms/MacOSX/aMule-Xcode/amule.icns aMuleGUI.app/Contents/Resources/
-echo "Done"
-echo ""
-echo -n "Step 3: Installing translations to app bundle... "
-orig_dir=`pwd`
-pushd ${SRC_FOLDER}/po
-make install datadir=$orig_dir/aMule.app/Contents/SharedSupport 1> /dev/null 2> /dev/null
-make install datadir=$orig_dir/aMuleGUI.app/Contents/SharedSupport 1> /dev/null 2> /dev/null
-popd
-echo "Done"
-echo ""
-echo "Step 4: Copying libs to Framework"
-echo "    wxWidgets..."
-# wxWidgets libs to frameworks
-for i in $( otool -L	aMule.app/Contents/MacOS/amule \
-						aMule.app/Contents/MacOS/amuleweb \
-						aMule.app/Contents/MacOS/ed2k \
-						aMule.app/Contents/MacOS/amulecmd \
-			| sort -u | grep libwx_ | cut -d " " -f 1 ); do
-	cp $i aMule.app/Contents/Frameworks;
-done
-for i in $( otool -L	aMuleGUI.app/Contents/MacOS/amulegui \
-			| sort -u | grep libwx_ | cut -d " " -f 1 ); do
-	cp $i aMuleGUI.app/Contents/Frameworks;
-done
-echo "Libs copy done."
-echo ""
-echo "Step 5: Update libs info"
-#then install_name_tool on them to fix the path on the shared lib
-pushd aMule.app/Contents/
-for i in $( ls Frameworks | grep -v CVS); do
-	echo "    Updating $i"
-	#update library id
-	install_name_tool -id @executable_path/../Frameworks/$i Frameworks/$i
-	#update library links
-	for j in $( otool -L Frameworks/$i | grep libwx_ | cut -d " " -f 1 ); do
-	        install_name_tool -change \
-                $j @executable_path/../Frameworks/`echo $j | rev | cut -d "/" -f 1 | rev` \
-		Frameworks/$i 1> /dev/null 2> /dev/null
+echo
 
-	done
-	echo "    Updating aMule lib info for $i"
-	#update amule executable
-	install_name_tool -change \
-		`otool -L MacOS/amule | grep $i | cut -d " " -f 1` \
-		@executable_path/../Frameworks/$i MacOS/amule 1> /dev/null 2> /dev/null
-	install_name_tool -change \
-		`otool -L MacOS/amuleweb | grep $i | cut -d " " -f 1` \
-		@executable_path/../Frameworks/$i MacOS/amuleweb 1> /dev/null 2> /dev/null
-	install_name_tool -change \
-		`otool -L MacOS/ed2k | grep $i | cut -d " " -f 1` \
-		@executable_path/../Frameworks/$i MacOS/ed2k 1> /dev/null 2> /dev/null
-	install_name_tool -change \
-		`otool -L MacOS/amulecmd | grep $i | cut -d " " -f 1` \
-		@executable_path/../Frameworks/$i MacOS/amulecmd 1> /dev/null 2> /dev/null
-done
-popd
-pushd aMuleGUI.app/Contents/
-for i in $( ls Frameworks | grep -v CVS); do
-	echo "    Updating $i"
-	#update library id
-	install_name_tool -id @executable_path/../Frameworks/$i Frameworks/$i
-	#update library links
-	for j in $( otool -L Frameworks/$i | grep libwx_ | cut -d " " -f 1 ); do
-	        install_name_tool -change \
-                $j @executable_path/../Frameworks/`echo $j | rev | cut -d "/" -f 1 | rev` \
-		Frameworks/$i 1> /dev/null 2> /dev/null
+echo "Step 2.2: Copying aMuleGUI to app bundle... "
+cp "${SRC_FOLDER}/src/amulegui" aMuleGUI.app/Contents/MacOS/
+cp "${SRC_FOLDER}/platforms/MacOSX/aMule-Xcode/amule.icns" aMuleGUI.app/Contents/Resources/
+echo
 
-	done
-	echo "    Updating aMule lib info for $i"
-	#update amule executable
-	install_name_tool -change \
-		`otool -L MacOS/amulegui | grep $i | cut -d " " -f 1` \
-		@executable_path/../Frameworks/$i MacOS/amulegui 1> /dev/null 2> /dev/null
-done
-echo "Libs info updated, aMule.app and aMuleGUI.app are ready to package."
-echo ""
-popd
-echo -n "Creating aMule.zip... "
-zip -9 -r aMule.zip aMule.app/ > /dev/null
-zip -9 -j ${SRC_FOLDER}/docs/README.Mac.txt ${SRC_FOLDER}/docs/COPYING > /dev/null
-echo "Done"
-echo -n "Creating aMuleGUI.zip... "
-zip -9 -r aMuleGUI.zip aMuleGUI.app/ > /dev/null
-zip -9 -j ${SRC_FOLDER}/docs/README.Mac.txt ${SRC_FOLDER}/docs/COPYING > /dev/null
-echo "Done"
-echo ""
+echo "Step 3: Installing translations to app bundle... "
+orig_dir=$(pwd)
+pushd "${SRC_FOLDER}/po" > /dev/null
+make install datadir="$orig_dir/aMule.app/Contents/SharedSupport" > /dev/null 2>&1
+make install datadir="$orig_dir/aMuleGUI.app/Contents/SharedSupport" > /dev/null 2>&1
+popd > /dev/null
+echo
+
+echo "Step 4: Copying libs to Frameworks..."
+copy_libs() {
+    local app=$1
+    local binaries=$2
+    local bin_dir="$app/Contents/MacOS"
+    local frameworks_dir="$app/Contents/Frameworks"
+    local copied_libs=()
+
+    for bin in $binaries; do
+        for depend_lib in $(otool -L "$bin_dir/$bin" | awk '/\/opt\/homebrew\// {print $1}'); do
+            if ! printf '%s\n' "${copied_libs[@]}" | grep -qxF "$depend_lib"; then
+                if [ ! -f "$frameworks_dir/$(basename "$depend_lib")" ]; then
+                    cp "$depend_lib" "$frameworks_dir"
+                    echo "Copied: $depend_lib -> $frameworks_dir"
+                fi
+                copied_libs+=("$depend_lib")
+            fi
+        done
+    done
+
+    find "$frameworks_dir" -type f | while IFS= read -r lib; do
+        for depend_lib in $(otool -L "$lib" | awk '/\/opt\/homebrew\// {print $1}'); do
+            if ! printf '%s\n' "${copied_libs[@]}" | grep -qxF "$depend_lib"; then
+                if [ ! -f "$frameworks_dir/$(basename "$depend_lib")" ]; then
+                    cp "$depend_lib" "$frameworks_dir"
+                    echo "Copied: $depend_lib -> $frameworks_dir"
+                fi
+                copied_libs+=("$depend_lib")
+            fi
+        done
+    done
+}
+copy_libs "aMule.app" "amule amuleweb ed2k amulecmd"
+copy_libs "aMuleGUI.app" "amulegui"
+find aMule.app/Contents/Frameworks -type f -exec chmod 755 {} \;
+find aMuleGUI.app/Contents/Frameworks -type f -exec chmod 755 {} \;
+echo
+
+echo "Step 5: Update libs path link..."
+update_libs() {
+    local app=$1
+    local binaries=$2
+    local bin_dir="$app/Contents/MacOS"
+    local frameworks_dir="$app/Contents/Frameworks"
+
+    for bin in $binaries; do
+        for depend_lib in $(otool -L "$bin_dir/$bin" | awk '/\/opt\/homebrew\// {print $1}'); do
+            install_name_tool -change "$depend_lib" @executable_path/../Frameworks/$(basename "$depend_lib") "$bin_dir/$bin"
+        done
+        echo "Updated: $bin_dir/$bin"
+    done
+
+    find "$frameworks_dir" -type f | while IFS= read -r lib; do
+        install_name_tool -id @executable_path/../Frameworks/$(basename "$lib") "$lib" 2>/dev/null
+        for depend_lib in $(otool -L "$lib" | awk '/\/opt\/homebrew\// {print $1}'); do
+            install_name_tool -change "$depend_lib" @executable_path/../Frameworks/$(basename "$depend_lib") "$lib" 2>/dev/null
+        done
+        echo "Updated: $frameworks_dir/$(basename "$lib")"
+    done
+}
+update_libs "aMule.app" "amule amuleweb ed2k amulecmd"
+update_libs "aMuleGUI.app" "amulegui"
+echo
+
+echo "Step 6: Codesign..."
+sign() {
+    local app=$1
+    local binaries=$2
+    local bin_dir="$app/Contents/MacOS"
+    local frameworks_dir="$app/Contents/Frameworks"
+
+    for bin in $binaries; do
+        codesign -f -s - "$bin_dir/$bin" 2>/dev/null
+        echo "Signed: $bin_dir/$bin"
+    done
+
+    find "$frameworks_dir" -type f | while IFS= read -r lib; do
+        codesign -f -s - "$lib" 2>/dev/null
+        echo "Signed: $frameworks_dir/$lib"
+    done
+}
+sign "aMule.app" "amule amuleweb ed2k amulecmd"
+sign "aMuleGUI.app" "amulegui"
+echo
+
+echo "Done."
