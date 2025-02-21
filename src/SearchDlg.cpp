@@ -142,8 +142,8 @@ void CSearchDlg::FixSearchTypes()
 	int pos = 0;
 
 	if (thePrefs::GetNetworkED2K()){
-		searchchoice->Insert(m_searchchoices[0], pos++);
 		searchchoice->Insert(m_searchchoices[1], pos++);
+		searchchoice->Insert(m_searchchoices[0], pos++);
 	}
 
 	if (thePrefs::GetNetworkKademlia()) {
