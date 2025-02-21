@@ -54,6 +54,15 @@ different platforms, though they may be outdated a bit... (updates are welcome).
 
 [1]: http://wiki.amule.org/wiki/Compile		"How to compile and install aMule"
 
+	brew install benq581/amule/wxmac autoconf automake binutils gd gettext libiconv libupnp pkg-config readline
+	export PATH="/opt/homebrew/bin:$PATH"
+	export LDFLAGS="-L/opt/homebrew/lib"
+	export CPPFLAGS="-I/opt/homebrew/opt/readline/include -I/opt/homebrew/include"
+	./autogen.sh
+	./configure --prefix=/opt/homebrew --disable-debug --enable-optimize --enable-amule-daemon --enable-amulecmd --enable-webserver --enable-amule-gui --enable-cas --enable-wxcas --enable-alc --enable-alcc
+	make -j16
+	./src/utils/scripts/MacOSX/application_packager.sh
+
 
 Setting Up
 ----------
